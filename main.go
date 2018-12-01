@@ -42,7 +42,7 @@ func main() {
 	rb.reMutex.Lock()
 	rb.reminders = append(rb.reminders, rb.GetAllReminders()...)
 	rb.reMutex.Unlock()
-	log.Infof("Loaded %d reminders", len(rb.reminders))
+	log.Infof("Loaded %d reminder(s)", len(rb.reminders))
 	go rb.startReminding()
 
 	c := make(chan os.Signal, 1)

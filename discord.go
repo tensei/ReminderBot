@@ -128,12 +128,12 @@ func discordUptime(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Mess
 		s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
 			Fields: []*discordgo.MessageEmbedField{
 				&discordgo.MessageEmbedField{
-					Name:   "Started",
+					Name:   "started",
 					Value:  rb.started.UTC().Format(time.RFC822),
 					Inline: true,
 				},
 				&discordgo.MessageEmbedField{
-					Name:   "Uptime",
+					Name:   "uptime",
 					Value:  fmt.Sprintf("%s", time.Since(rb.started)),
 					Inline: true,
 				},
@@ -150,23 +150,23 @@ func discordStats(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Messa
 		guilds := len(s.State.Guilds)
 		users := 0
 		for _, g := range s.State.Guilds {
-			users += len(g.Members)
+			users += g.MemberCount
 		}
 
 		s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
 			Fields: []*discordgo.MessageEmbedField{
 				&discordgo.MessageEmbedField{
-					Name:   "Guilds",
+					Name:   "guilds",
 					Value:  fmt.Sprintf("%d", guilds),
 					Inline: true,
 				},
 				&discordgo.MessageEmbedField{
-					Name:   "Users",
+					Name:   "users",
 					Value:  fmt.Sprintf("%d", users),
 					Inline: true,
 				},
 				&discordgo.MessageEmbedField{
-					Name:   "Reminders",
+					Name:   "reminders",
 					Value:  fmt.Sprintf("%d", len(rb.reminders)),
 					Inline: true,
 				},
@@ -192,7 +192,19 @@ func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Mess
 			return
 		}
 
-		args := strings.SplitN(m.Content, " ", 3)
+		allMentions := m.Author.Mention()
+		for _, u := range m.Mentions {
+			allMentions += fmt.Sprintf(" %s", u.Mention())
+		}
+
+		for _, role := range m.MentionRoles {
+			allMentions += fmt.Sprintf(" <@&%s>", role)
+		}
+		content, err := m.ContentWithMoreMentionsReplaced(s)
+		if err != nil {
+			content = m.ContentWithMentionsReplaced()
+		}
+		args := strings.SplitN(content, " ", 3)
 		if len(args) < 3 {
 			return
 		}
@@ -240,10 +252,12 @@ func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Mess
 			ID:            m.ID,
 			UserID:        m.Author.ID,
 			ChannelID:     m.ChannelID,
-			Message:       messageArg,
+			Message:       strings.TrimSpace(messageArg),
 			Time:          time.Now().UTC().Add(duration),
 			DirectMessage: dm,
+			Mentions:      allMentions,
 		}
+
 		rb.AddReminder(r)
 		rb.reMutex.Lock()
 		rb.reminders = append(rb.reminders, r)
@@ -273,13 +287,13 @@ func (rd *ReminderDiscord) remind(r *Reminder) {
 	embed := &discordgo.MessageEmbed{
 		Fields: []*discordgo.MessageEmbedField{
 			&discordgo.MessageEmbedField{
-				Name:   "Set",
+				Name:   "set",
 				Value:  r.CreatedAt.UTC().Format("02 Jan 06 15:04:05 MST"),
 				Inline: true,
 			},
 			&discordgo.MessageEmbedField{
-				Name:   "Channel",
-				Value:  fmt.Sprintf("<#%s>", r.ChannelID),
+				Name:   "user",
+				Value:  fmt.Sprintf("<@%s>", r.UserID),
 				Inline: true,
 			},
 		},
@@ -295,6 +309,7 @@ func (rd *ReminderDiscord) remind(r *Reminder) {
 		return
 	}
 	rd.c.ChannelMessageSendEmbed(r.ChannelID, embed)
+	rd.c.ChannelMessageSend(r.ChannelID, r.Mentions)
 }
 
 func (rb *ReminderBot) countPublicRemindersUser(userID string) int {

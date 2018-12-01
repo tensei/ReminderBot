@@ -34,6 +34,7 @@ type Reminder struct {
 	Message       string
 	Time          time.Time
 	DirectMessage bool
+	Mentions      string
 }
 
 // NewDatabase create/opens a database
