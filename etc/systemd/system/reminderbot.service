@@ -5,8 +5,8 @@ After=network.target
 [Service]
 User=tensei
 Restart=always
-WorkingDirectory=/home/tensei/reminderbot
-ExecStart=/home/tensei/go/bin/reminderbot
+WorkingDirectory=/home/tensei/ReminderBot
+ExecStart=/home/tensei/go/bin/ReminderBot
 
 [Install]
 WantedBy=multi-user.target
