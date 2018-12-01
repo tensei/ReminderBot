@@ -79,9 +79,9 @@ func (rb *ReminderBot) CommandHandler(s *discordgo.Session, m *discordgo.Message
 		if strings.EqualFold(k, parts[0]) {
 			guild, err := s.Guild(m.GuildID)
 			if err != nil {
-				log.Infof("[COMMAND] %s used in dm user: %s(%s) ", parts[0], m.Author.String(), m.Author.ID)
+				log.Infof("[COMMAND] %s used in dm user: %s(%s)", parts[0], m.Author.String(), m.Author.ID)
 			} else {
-				log.Infof("[COMMAND] %s used in server: %s(%s), user: %s(%s) ", parts[0], guild.Name, guild.ID, m.Author.String(), m.Author.ID)
+				log.Infof("[COMMAND] %s used in server: %s(%s), user: %s(%s)", parts[0], guild.Name, guild.ID, m.Author.String(), m.Author.ID)
 			}
 			go fn(s, m, k)
 			return
