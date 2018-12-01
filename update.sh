@@ -1,6 +1,6 @@
 #!/bin/bash
 
 git pull
-go install -v ./...
+go install -v
 systemctl restart reminderbot.service
 journalctl -fu reminderbot.service
