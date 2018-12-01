@@ -11,11 +11,16 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-type commandFunc func(s *discordgo.Session, m *discordgo.MessageCreate, command string)
+type commandFunc func(s *discordgo.Session, m *discordgo.MessageCreate, command string, dm bool)
 
 var (
 	invalidTimeEmbed = &discordgo.MessageEmbed{
 		Description: "invalid time, please use 1m (or w|d|h|m) time format",
+		Color:       0xFF0000,
+	}
+	maxPublicReminders    = 3
+	maxPublicReachedEmbed = &discordgo.MessageEmbed{
+		Description: "only 3 public reminders allowed, please use dm's to add more",
 		Color:       0xFF0000,
 	}
 )
@@ -77,13 +82,15 @@ func (rb *ReminderBot) CommandHandler(s *discordgo.Session, m *discordgo.Message
 	parts := strings.SplitN(m.Content, " ", 2)
 	for k, fn := range rb.Discord.commands {
 		if strings.EqualFold(k, parts[0]) {
+			dm := false
 			guild, err := s.Guild(m.GuildID)
 			if err != nil {
 				log.Infof("[COMMAND] %s used in dm user: %s(%s)", parts[0], m.Author.String(), m.Author.ID)
+				dm = true
 			} else {
 				log.Infof("[COMMAND] %s used in server: %s(%s), user: %s(%s)", parts[0], guild.Name, guild.ID, m.Author.String(), m.Author.ID)
 			}
-			go fn(s, m, k)
+			go fn(s, m, k, dm)
 			return
 		}
 	}
@@ -93,16 +100,16 @@ func (rb *ReminderBot) isOwner(id string) bool {
 	return rb.Config.Discord.OwnerID == id
 }
 
-func discordGetReminder(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.MessageCreate, command string) {
-	return func(s *discordgo.Session, m *discordgo.MessageCreate, command string) {
+func discordGetReminder(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.MessageCreate, command string, dm bool) {
+	return func(s *discordgo.Session, m *discordgo.MessageCreate, command string, dm bool) {
 		s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
 			Description: "https://discordapp.com/oauth2/authorize?client_id=517763064351686656&scope=bot&permissions=1",
 		})
 	}
 }
 
-func discordHelp(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.MessageCreate, command string) {
-	return func(s *discordgo.Session, m *discordgo.MessageCreate, command string) {
+func discordHelp(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.MessageCreate, command string, dm bool) {
+	return func(s *discordgo.Session, m *discordgo.MessageCreate, command string, dm bool) {
 		prefix := rb.Config.Discord.Prefix
 		msg := fmt.Sprintf("%sremind 1h (w for weeks, d for Days, h for Hours, m for Minutes) your text here\n", prefix)
 		msg += fmt.Sprintf("%sgetreminder returns the link to add the bot to your server", prefix)
@@ -113,8 +120,8 @@ func discordHelp(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Messag
 	}
 }
 
-func discordUptime(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.MessageCreate, command string) {
-	return func(s *discordgo.Session, m *discordgo.MessageCreate, command string) {
+func discordUptime(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.MessageCreate, command string, dm bool) {
+	return func(s *discordgo.Session, m *discordgo.MessageCreate, command string, dm bool) {
 		if !rb.isOwner(m.Author.ID) {
 			return
 		}
@@ -135,8 +142,8 @@ func discordUptime(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Mess
 	}
 }
 
-func discordStats(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.MessageCreate, command string) {
-	return func(s *discordgo.Session, m *discordgo.MessageCreate, command string) {
+func discordStats(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.MessageCreate, command string, dm bool) {
+	return func(s *discordgo.Session, m *discordgo.MessageCreate, command string, dm bool) {
 		if !rb.isOwner(m.Author.ID) {
 			return
 		}
@@ -173,10 +180,15 @@ var (
 	timeRegex       = regexp.MustCompile("^([0-9]+w)?([0-9]+d)?([0-9]+h)?([0-9]+m)?$")
 )
 
-func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.MessageCreate, command string) {
-	return func(s *discordgo.Session, m *discordgo.MessageCreate, command string) {
+func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.MessageCreate, command string, dm bool) {
+	return func(s *discordgo.Session, m *discordgo.MessageCreate, command string, dm bool) {
 		// Ignore all messages created by the bot itself
 		if m.Author.ID == s.State.User.ID {
+			return
+		}
+
+		if !dm && rb.countPublicRemindersUser(m.Author.ID) >= maxPublicReminders {
+			s.ChannelMessageSendEmbed(m.ChannelID, maxPublicReachedEmbed)
 			return
 		}
 
@@ -225,11 +237,12 @@ func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Mess
 		}
 		// log.Infof("Adding reminder for %s, %s", duration, messageArg)
 		r := &Reminder{
-			ID:        m.ID,
-			UserID:    m.Author.ID,
-			ChannelID: m.ChannelID,
-			Message:   messageArg,
-			Time:      time.Now().UTC().Add(duration),
+			ID:            m.ID,
+			UserID:        m.Author.ID,
+			ChannelID:     m.ChannelID,
+			Message:       messageArg,
+			Time:          time.Now().UTC().Add(duration),
+			DirectMessage: dm,
 		}
 		rb.AddReminder(r)
 		rb.reMutex.Lock()
@@ -237,29 +250,27 @@ func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Mess
 		rb.reMutex.Unlock()
 
 		msg := fmt.Sprintf("reminding you(%s) in %s, %s", m.Author.Mention(), duration, time.Now().UTC().Add(duration).Format("02 Jan 06 15:04:05 MST"))
-		dm, err := s.UserChannelCreate(m.Author.ID)
-		if err != nil {
-			s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
+
+		if dm {
+			dmCh, err := s.UserChannelCreate(m.Author.ID)
+			if err != nil {
+				log.Warnf("couldn't create dm channel, %v", err)
+				return
+			}
+			s.ChannelMessageSendEmbed(dmCh.ID, &discordgo.MessageEmbed{
 				Description: msg,
 			})
 			return
 		}
-		s.ChannelMessageSendEmbed(dm.ID, &discordgo.MessageEmbed{
+
+		s.ChannelMessageSendEmbed(r.ChannelID, &discordgo.MessageEmbed{
 			Description: msg,
 		})
 	}
 }
 
 func (rd *ReminderDiscord) remind(r *Reminder) {
-	dm, err := rd.c.UserChannelCreate(r.UserID)
-	if err != nil {
-		log.Error(err)
-		// fallback use channel instead of dm
-		msg := fmt.Sprintf("<@%s> asked for a reminder: %s", r.UserID, r.Message)
-		rd.c.ChannelMessageSend(r.ChannelID, msg)
-		return
-	}
-	rd.c.ChannelMessageSendEmbed(dm.ID, &discordgo.MessageEmbed{
+	embed := &discordgo.MessageEmbed{
 		Fields: []*discordgo.MessageEmbedField{
 			&discordgo.MessageEmbedField{
 				Name:   "Set",
@@ -273,5 +284,27 @@ func (rd *ReminderDiscord) remind(r *Reminder) {
 			},
 		},
 		Description: r.Message,
-	})
+	}
+	if r.DirectMessage {
+		dm, err := rd.c.UserChannelCreate(r.UserID)
+		if err != nil {
+			log.Warnf("couldn't create dm channel, %v", err)
+			return
+		}
+		rd.c.ChannelMessageSendEmbed(dm.ID, embed)
+		return
+	}
+	rd.c.ChannelMessageSendEmbed(r.ChannelID, embed)
+}
+
+func (rb *ReminderBot) countPublicRemindersUser(userID string) int {
+	c := 0
+	rb.reMutex.Lock()
+	defer rb.reMutex.Unlock()
+	for _, r := range rb.reminders {
+		if !r.DirectMessage && r.UserID == userID {
+			c++
+		}
+	}
+	return c
 }

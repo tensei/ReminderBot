@@ -29,10 +29,11 @@ type Reminder struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 
-	UserID    string
-	ChannelID string
-	Message   string
-	Time      time.Time
+	UserID        string
+	ChannelID     string
+	Message       string
+	Time          time.Time
+	DirectMessage bool
 }
 
 // NewDatabase create/opens a database
