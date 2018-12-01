@@ -1,0 +1,12 @@
+{
+    "discord": {
+        "token": "",
+        "prefix": "!",
+        "ownerID": ""
+    },
+
+    "database": {
+        "dialect": "sqlite3",
+        "connectionString": "reminder.db"
+    }
+}

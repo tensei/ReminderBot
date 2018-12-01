@@ -1,0 +1,12 @@
+[Unit]
+Description=Discord ReminderBot
+After=network.target
+
+[Service]
+User=tensei
+Restart=always
+WorkingDirectory=/home/tensei/reminderbot
+ExecStart=/home/tensei/go/bin/reminderbot
+
+[Install]
+WantedBy=multi-user.target
