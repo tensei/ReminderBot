@@ -191,19 +191,29 @@ func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Mess
 			s.ChannelMessageSendEmbed(m.ChannelID, maxPublicReachedEmbed)
 			return
 		}
+		content := m.Content
+		allMentions := ""
+		if !dm {
+			// fill mentions string
+			allMentions = m.Author.Mention()
+			// user mentions
+			for _, u := range m.Mentions {
+				allMentions += fmt.Sprintf(" %s", u.Mention())
+			}
 
-		allMentions := m.Author.Mention()
-		for _, u := range m.Mentions {
-			allMentions += fmt.Sprintf(" %s", u.Mention())
+			// role mentions
+			for _, role := range m.MentionRoles {
+				allMentions += fmt.Sprintf(" <@&%s>", role)
+			}
+
+			// replace mentions
+			co, err := m.ContentWithMoreMentionsReplaced(s)
+			if err != nil {
+				co = m.ContentWithMentionsReplaced()
+			}
+			content = co
 		}
 
-		for _, role := range m.MentionRoles {
-			allMentions += fmt.Sprintf(" <@&%s>", role)
-		}
-		content, err := m.ContentWithMoreMentionsReplaced(s)
-		if err != nil {
-			content = m.ContentWithMentionsReplaced()
-		}
 		args := strings.SplitN(content, " ", 3)
 		if len(args) < 3 {
 			return
@@ -226,6 +236,7 @@ func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Mess
 			s.ChannelMessageSendEmbed(m.ChannelID, invalidTimeEmbed)
 			return
 		}
+
 		var duration time.Duration
 		for _, m := range matches[0][1:] {
 			if m == "" {
@@ -255,17 +266,24 @@ func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Mess
 			Message:       strings.TrimSpace(messageArg),
 			Time:          time.Now().UTC().Add(duration),
 			DirectMessage: dm,
-			Mentions:      allMentions,
 		}
 
+		// don't need to set this if it isn't a dm
+		if !dm {
+			r.Mentions = allMentions
+		}
+
+		// adding it to the database reminders
 		rb.AddReminder(r)
 		rb.reMutex.Lock()
+		// adding it to the in memory reminders
 		rb.reminders = append(rb.reminders, r)
 		rb.reMutex.Unlock()
 
 		msg := fmt.Sprintf("reminding you(%s) in %s, %s", m.Author.Mention(), duration, time.Now().UTC().Add(duration).Format("02 Jan 06 15:04:05 MST"))
 
 		if dm {
+			// create dm chat with the user
 			dmCh, err := s.UserChannelCreate(m.Author.ID)
 			if err != nil {
 				log.Warnf("couldn't create dm channel, %v", err)
@@ -277,6 +295,7 @@ func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Mess
 			return
 		}
 
+		// send it to the public #channel
 		s.ChannelMessageSendEmbed(r.ChannelID, &discordgo.MessageEmbed{
 			Description: msg,
 		})
@@ -316,6 +335,7 @@ func (rb *ReminderBot) countPublicRemindersUser(userID string) int {
 	c := 0
 	rb.reMutex.Lock()
 	defer rb.reMutex.Unlock()
+
 	for _, r := range rb.reminders {
 		if !r.DirectMessage && r.UserID == userID {
 			c++
