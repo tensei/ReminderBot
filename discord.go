@@ -2,10 +2,10 @@ package main
 
 import (
 	"fmt"
-	"regexp"
-	"strconv"
 	"strings"
 	"time"
+
+	"github.com/karrick/tparse"
 
 	"github.com/bwmarrin/discordgo"
 	log "github.com/sirupsen/logrus"
@@ -175,11 +175,6 @@ func discordStats(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Messa
 	}
 }
 
-var (
-	timeFormatRegex = regexp.MustCompile("^[0-9]+[wdhm]")
-	timeRegex       = regexp.MustCompile("^([0-9]+w)?([0-9]+d)?([0-9]+h)?([0-9]+m)?$")
-)
-
 func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.MessageCreate, command string, dm bool) {
 	return func(s *discordgo.Session, m *discordgo.MessageCreate, command string, dm bool) {
 		// Ignore all messages created by the bot itself
@@ -223,48 +218,21 @@ func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Mess
 		timeArg := strings.ToLower(strings.TrimSpace(args[0]))
 		messageArg := strings.TrimSpace(args[1])
 
-		if !timeFormatRegex.MatchString(timeArg) {
+		now := time.Now().UTC()
+		another, err := tparse.AddDuration(now, timeArg)
+		if err != nil {
+			log.Infof("invalid time entered, %v", err)
 			s.ChannelMessageSendEmbed(m.ChannelID, invalidTimeEmbed)
 			return
 		}
-		matches := timeRegex.FindAllStringSubmatch(timeArg, -1)
-		if len(matches) < 1 {
-			s.ChannelMessageSendEmbed(m.ChannelID, invalidTimeEmbed)
-			return
-		}
-		if len(matches[0]) < 1 {
-			s.ChannelMessageSendEmbed(m.ChannelID, invalidTimeEmbed)
-			return
-		}
+		duration := another.Sub(now)
 
-		var duration time.Duration
-		for _, m := range matches[0][1:] {
-			if m == "" {
-				continue
-			}
-			suffix := m[len(m)-1:]
-			switch suffix {
-			case "w":
-				w, _ := strconv.Atoi(strings.TrimSuffix(m, "w"))
-				duration += time.Duration(w) * ((time.Hour * 24) * 7)
-			case "d":
-				d, _ := strconv.Atoi(strings.TrimSuffix(m, "d"))
-				duration += time.Duration(d) * (time.Hour * 24)
-			case "h":
-				h, _ := strconv.Atoi(strings.TrimSuffix(m, "h"))
-				duration += time.Duration(h) * time.Hour
-			case "m":
-				m, _ := strconv.Atoi(strings.TrimSuffix(m, "m"))
-				duration += time.Duration(m) * time.Minute
-			}
-		}
-		// log.Infof("Adding reminder for %s, %s", duration, messageArg)
 		r := &Reminder{
 			ID:            m.ID,
 			UserID:        m.Author.ID,
 			ChannelID:     m.ChannelID,
 			Message:       strings.TrimSpace(messageArg),
-			Time:          time.Now().UTC().Add(duration),
+			Time:          another,
 			DirectMessage: dm,
 		}
 
@@ -280,7 +248,7 @@ func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Mess
 		rb.reminders = append(rb.reminders, r)
 		rb.reMutex.Unlock()
 
-		msg := fmt.Sprintf("reminding you(%s) in %s, %s", m.Author.Mention(), duration, time.Now().UTC().Add(duration).Format("02 Jan 06 15:04:05 MST"))
+		msg := fmt.Sprintf("reminding you(%s) in %s, %s", m.Author.Mention(), duration.String(), time.Now().UTC().Add(duration).Format("02 Jan 06 15:04:05 MST"))
 
 		if dm {
 			// create dm chat with the user
