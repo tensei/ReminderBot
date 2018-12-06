@@ -15,7 +15,7 @@ type commandFunc func(s *discordgo.Session, m *discordgo.MessageCreate, command 
 
 var (
 	invalidTimeEmbed = &discordgo.MessageEmbed{
-		Description: "invalid time, please use 1m (or y|mo|w|d|h|m) time format",
+		Description: "invalid time, please use 1m, 1.5h or 2h45m (y|mo|w|d|h|m) time format",
 		Color:       0xFF0000,
 	}
 	missingArgsEmbed = &discordgo.MessageEmbed{
@@ -219,6 +219,7 @@ func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Mess
 		}
 
 		args := strings.SplitN(content, " ", 3)
+		args = removeEmptyItems(args)
 		if len(args) < 3 {
 			s.ChannelMessageSendEmbed(m.ChannelID, missingArgsEmbed)
 			return
@@ -316,4 +317,14 @@ func (rb *ReminderBot) countPublicRemindersUser(userID string) int {
 		}
 	}
 	return c
+}
+
+func removeEmptyItems(items []string) []string {
+	var n []string
+	for _, i := range items {
+		if !strings.EqualFold(strings.TrimSpace(i), "") {
+			n = append(n, i)
+		}
+	}
+	return n
 }
