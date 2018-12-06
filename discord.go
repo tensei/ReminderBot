@@ -18,6 +18,14 @@ var (
 		Description: "invalid time, please use 1m (or y|mo|w|d|h|m) time format",
 		Color:       0xFF0000,
 	}
+	missingArgsEmbed = &discordgo.MessageEmbed{
+		Description: "missing args, please use !remind <duration> <text>",
+		Color:       0xFF0000,
+	}
+	pastTimeErrEmbed = &discordgo.MessageEmbed{
+		Description: "can't remind you in the past...",
+		Color:       0xFF0000,
+	}
 
 	maxPublicReminders    = 3
 	maxPublicReachedEmbed = &discordgo.MessageEmbed{
@@ -212,6 +220,7 @@ func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Mess
 
 		args := strings.SplitN(content, " ", 3)
 		if len(args) < 3 {
+			s.ChannelMessageSendEmbed(m.ChannelID, missingArgsEmbed)
 			return
 		}
 		args = args[1:]
@@ -229,6 +238,8 @@ func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Mess
 
 		if !another.After(now) {
 			// silently do nothing?
+			log.Infof("time '%s' is in the past", another.String())
+			s.ChannelMessageSendEmbed(m.ChannelID, pastTimeErrEmbed)
 			return
 		}
 
@@ -250,28 +261,16 @@ func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Mess
 
 		// adding it to the database reminders
 		rb.AddReminder(r)
-		rb.reMutex.Lock()
+
 		// adding it to the in memory reminders
+		rb.reMutex.Lock()
 		rb.reminders = append(rb.reminders, r)
 		rb.reMutex.Unlock()
 
-		msg := fmt.Sprintf("reminding you(%s) in %s, %s", m.Author.Mention(), duration.String(), time.Now().UTC().Add(duration).Format("02 Jan 06 15:04:05 MST"))
-
-		if dm {
-			// create dm chat with the user
-			dmCh, err := s.UserChannelCreate(m.Author.ID)
-			if err != nil {
-				log.Warnf("couldn't create dm channel, %v", err)
-				return
-			}
-			s.ChannelMessageSendEmbed(dmCh.ID, &discordgo.MessageEmbed{
-				Description: msg,
-			})
-			return
-		}
+		msg := fmt.Sprintf("reminding you(%s) in %s, %s", m.Author.Mention(), duration.String(), another.Format("02 Jan 06 15:04:05 MST"))
 
 		// send it to the public #channel
-		s.ChannelMessageSendEmbed(r.ChannelID, &discordgo.MessageEmbed{
+		s.ChannelMessageSendEmbed(m.ChannelID, &discordgo.MessageEmbed{
 			Description: msg,
 		})
 	}
