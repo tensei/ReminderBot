@@ -15,9 +15,10 @@ type commandFunc func(s *discordgo.Session, m *discordgo.MessageCreate, command 
 
 var (
 	invalidTimeEmbed = &discordgo.MessageEmbed{
-		Description: "invalid time, please use 1m (or w|d|h|m) time format",
+		Description: "invalid time, please use 1m (or y|mo|w|d|h|m) time format",
 		Color:       0xFF0000,
 	}
+
 	maxPublicReminders    = 3
 	maxPublicReachedEmbed = &discordgo.MessageEmbed{
 		Description: "only 3 public reminders allowed, please use dm's to add more",
@@ -225,6 +226,12 @@ func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Mess
 			s.ChannelMessageSendEmbed(m.ChannelID, invalidTimeEmbed)
 			return
 		}
+
+		if !another.After(now) {
+			// silently do nothing?
+			return
+		}
+
 		duration := another.Sub(now)
 
 		r := &Reminder{
