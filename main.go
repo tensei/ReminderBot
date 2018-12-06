@@ -66,8 +66,8 @@ func NewReminderBot() *ReminderBot {
 
 // Close closing everything
 func (rb *ReminderBot) Close() {
-	rb.db.Close()
-	rb.Discord.c.Close()
+	_ = rb.db.Close()
+	_ = rb.Discord.c.Close()
 }
 
 func (rb *ReminderBot) startReminding() {
