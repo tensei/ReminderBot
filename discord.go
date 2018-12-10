@@ -32,6 +32,16 @@ var (
 		Description: "only 3 public reminders allowed, please use dm's to add more",
 		Color:       0xFF0000,
 	}
+	maxPrivateReminders    = 10
+	maxPrivateReachedEmbed = &discordgo.MessageEmbed{
+		Description: "only 10 private reminders allowed",
+		Color:       0xFF0000,
+	}
+
+	maxDurationReachedEmbed = &discordgo.MessageEmbed{
+		Description: "max. 3 months please, you are over that",
+		Color:       0xFF0000,
+	}
 )
 
 // ReminderDiscord discord part of the bot
@@ -195,6 +205,11 @@ func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Mess
 			s.ChannelMessageSendEmbed(m.ChannelID, maxPublicReachedEmbed)
 			return
 		}
+		if dm && rb.countPrivateRemindersUser(m.Author.ID) >= maxPrivateReminders {
+			s.ChannelMessageSendEmbed(m.ChannelID, maxPrivateReachedEmbed)
+			return
+		}
+
 		content := m.Content
 		allMentions := ""
 		if !dm {
@@ -241,6 +256,15 @@ func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Mess
 			// silently do nothing?
 			log.Infof("time '%s' is in the past", another.String())
 			s.ChannelMessageSendEmbed(m.ChannelID, pastTimeErrEmbed)
+			return
+		}
+
+		// max 3 months
+		// make this changeable for each guild?
+		maxDuration := now.AddDate(0, 3, 0)
+		if another.After(maxDuration) {
+			log.Infof("reminder is too far in the future %s that's %v", another.String(), another.Sub(now))
+			s.ChannelMessageSendEmbed(m.ChannelID, maxDurationReachedEmbed)
 			return
 		}
 
@@ -313,6 +337,19 @@ func (rb *ReminderBot) countPublicRemindersUser(userID string) int {
 
 	for _, r := range rb.reminders {
 		if !r.DirectMessage && r.UserID == userID {
+			c++
+		}
+	}
+	return c
+}
+
+func (rb *ReminderBot) countPrivateRemindersUser(userID string) int {
+	c := 0
+	rb.reMutex.Lock()
+	defer rb.reMutex.Unlock()
+
+	for _, r := range rb.reminders {
+		if r.DirectMessage && r.UserID == userID {
 			c++
 		}
 	}
