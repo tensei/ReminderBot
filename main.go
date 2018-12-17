@@ -14,6 +14,7 @@ import (
 type ReminderBot struct {
 	db      *gorm.DB
 	Discord *ReminderDiscord
+	Dgg     *ReminderDgg
 	Config  *ReminderConfig
 
 	reMutex   sync.Mutex
@@ -37,6 +38,7 @@ func main() {
 
 	rb.NewDatabase()
 	rb.NewDiscord()
+	go rb.NewDestinygg()
 
 	// load database reminders after start
 	rb.reMutex.Lock()
@@ -58,6 +60,7 @@ func main() {
 func NewReminderBot() *ReminderBot {
 	return &ReminderBot{
 		Discord:   new(ReminderDiscord),
+		Dgg:       new(ReminderDgg),
 		Config:    new(ReminderConfig),
 		reminders: []*Reminder{},
 		started:   time.Now().UTC(),
@@ -68,6 +71,7 @@ func NewReminderBot() *ReminderBot {
 func (rb *ReminderBot) Close() {
 	_ = rb.db.Close()
 	_ = rb.Discord.c.Close()
+	_ = rb.Dgg.conn.Close()
 }
 
 func (rb *ReminderBot) startReminding() {
@@ -81,8 +85,14 @@ func (rb *ReminderBot) startReminding() {
 			}
 			if time.Now().UTC().After(r.Time) {
 
-				// create a dm channel and remind him/her/it
-				rb.Discord.remind(r)
+				switch r.Platform {
+				case "discord", "":
+					// create a dm channel if dm and remind him/her/it
+					rb.Discord.remind(r)
+				case "destinygg":
+					// send reminder as pm to dgg user
+					rb.Dgg.remind(r)
+				}
 
 				// database too
 				rb.RemoveReminder(r)

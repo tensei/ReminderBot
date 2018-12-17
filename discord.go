@@ -277,6 +277,7 @@ func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Mess
 			Message:       strings.TrimSpace(messageArg),
 			Time:          another,
 			DirectMessage: dm,
+			Platform:      "discord",
 		}
 
 		// don't need to set this if it isn't a dm

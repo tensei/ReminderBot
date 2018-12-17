@@ -14,6 +14,9 @@ type ReminderConfig struct {
 		Token   string `json:"token"`
 		OwnerID string `json:"ownerID"`
 	} `json:"discord"`
+	Destinygg struct {
+		Auth string `json:"auth"`
+	} `json:"destinygg"`
 	Database struct {
 		Dialect          string `json:"dialect"`
 		ConnectionString string `json:"connectionString"`

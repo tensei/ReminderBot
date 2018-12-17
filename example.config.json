@@ -4,6 +4,9 @@
         "prefix": "!",
         "ownerID": ""
     },
+    "destinygg": {
+        "auth": ""
+    },
 
     "database": {
         "dialect": "sqlite3",
