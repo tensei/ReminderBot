@@ -42,7 +42,6 @@ func (rb *ReminderBot) onDggPrivateMessage(m dggchat.PrivateMessage, s *dggchat.
 		return
 	}
 
-	//log.Printf("New message from %s: %s\n", m.User.Nick, m.Message)
 	args := strings.SplitN(m.Message, " ", 2)
 	args = removeEmptyItems(args)
 	if len(args) < 2 {
@@ -87,6 +86,8 @@ func (rb *ReminderBot) onDggPrivateMessage(m dggchat.PrivateMessage, s *dggchat.
 		DirectMessage: true,
 		Platform:      "destinygg",
 	}
+
+	log.Infof("[DESTINYGG] new reminder from %s in %s", m.User.Nick, duration)
 
 	// adding it to the database reminders
 	rb.AddReminder(r)
