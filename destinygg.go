@@ -50,7 +50,7 @@ func (rb *ReminderBot) onDggPrivateMessage(m dggchat.PrivateMessage, s *dggchat.
 	}
 
 	timeArg := strings.ToLower(strings.TrimSpace(args[0]))
-	messageArg := strings.TrimSpace(args[0])
+	messageArg := strings.TrimSpace(args[1])
 
 	now := time.Now().UTC()
 	another, err := tparse.AddDuration(now, timeArg)
