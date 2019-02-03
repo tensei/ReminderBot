@@ -56,11 +56,11 @@ type ReminderDiscord struct {
 func (rb *ReminderBot) SetupDiscordCommands() {
 	prefix := rb.Config.Discord.Prefix
 	rb.Discord.commands = map[string]commandFunc{
-		prefix + "uptime":      discordUptime(rb),
-		prefix + "stats":       discordStats(rb),
-		prefix + "remind":      discordRemind(rb),
-		prefix + "getreminder": discordGetReminder(),
-		prefix + "help":        discordHelp(rb),
+		prefix + "uptime":       discordUptime(rb),
+		prefix + "stats":        discordStats(rb),
+		prefix + "remind":       discordRemind(rb),
+		prefix + "getreminder":  discordGetReminder(),
+		prefix + "helpreminder": discordHelp(rb),
 	}
 }
 
@@ -85,6 +85,7 @@ func (rb *ReminderBot) NewDiscord() {
 	if err != nil {
 		log.Fatalf("failed opening connection to discord: %v", err)
 	}
+	_ = s.UpdateStatus(0, fmt.Sprintf("%shelpreminder", rb.Config.Discord.Prefix))
 
 	rb.Discord.c = s
 	rb.Discord.prefix = rb.Config.Discord.Prefix
