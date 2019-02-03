@@ -27,7 +27,7 @@ var (
 		Color:       0xFF0000,
 	}
 
-	maxPublicReminders    = 3
+	maxPublicReminders    = 5
 	maxPublicReachedEmbed = &discordgo.MessageEmbed{
 		Description: "only 3 public reminders allowed, please use dm's to add more",
 		Color:       0xFF0000,
