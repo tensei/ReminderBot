@@ -274,6 +274,7 @@ func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Mess
 			ID:            m.ID,
 			UserID:        m.Author.ID,
 			ChannelID:     m.ChannelID,
+			GuildID:       m.GuildID,
 			Message:       strings.TrimSpace(messageArg),
 			Time:          another,
 			DirectMessage: dm,

@@ -31,6 +31,7 @@ type Reminder struct {
 
 	UserID        string
 	ChannelID     string
+	GuildID       string
 	Message       string
 	Time          time.Time
 	DirectMessage bool
