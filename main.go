@@ -3,7 +3,6 @@ package main
 import (
 	"os"
 	"os/signal"
-	"sync"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -16,9 +15,6 @@ type ReminderBot struct {
 	Discord *ReminderDiscord
 	Dgg     *ReminderDgg
 	Config  *ReminderConfig
-
-	reMutex   sync.Mutex
-	reminders []*Reminder
 
 	started time.Time
 }
@@ -40,11 +36,7 @@ func main() {
 	rb.NewDiscord()
 	go rb.NewDestinygg()
 
-	// load database reminders after start
-	rb.reMutex.Lock()
-	rb.reminders = append(rb.reminders, rb.GetAllReminders()...)
-	rb.reMutex.Unlock()
-	log.Infof("Loaded %d reminder(s)", len(rb.reminders))
+	log.Infof("Loaded %d reminder(s)", len(rb.GetAllReminders()))
 	go rb.startReminding()
 
 	c := make(chan os.Signal, 1)
@@ -59,11 +51,10 @@ func main() {
 // NewReminderBot ...
 func NewReminderBot() *ReminderBot {
 	return &ReminderBot{
-		Discord:   new(ReminderDiscord),
-		Dgg:       new(ReminderDgg),
-		Config:    new(ReminderConfig),
-		reminders: []*Reminder{},
-		started:   time.Now().UTC(),
+		Discord: new(ReminderDiscord),
+		Dgg:     new(ReminderDgg),
+		Config:  new(ReminderConfig),
+		started: time.Now().UTC(),
 	}
 }
 
@@ -77,9 +68,8 @@ func (rb *ReminderBot) Close() {
 func (rb *ReminderBot) startReminding() {
 	tick := time.NewTicker(time.Minute)
 	for range tick.C {
-		rb.reMutex.Lock()
-		var toKeep []*Reminder
-		for _, r := range rb.reminders {
+		reminders := rb.GetAllReminders()
+		for _, r := range reminders {
 			if r == nil {
 				continue
 			}
@@ -96,13 +86,7 @@ func (rb *ReminderBot) startReminding() {
 
 				// database too
 				rb.RemoveReminder(r)
-			} else {
-				// keep this bitch
-				toKeep = append(toKeep, r)
 			}
 		}
-		rb.reminders = toKeep
-
-		rb.reMutex.Unlock()
 	}
 }

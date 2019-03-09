@@ -92,11 +92,6 @@ func (rb *ReminderBot) onDggPrivateMessage(m dggchat.PrivateMessage, s *dggchat.
 	// adding it to the database reminders
 	rb.AddReminder(r)
 
-	// adding it to the in memory reminders
-	rb.reMutex.Lock()
-	rb.reminders = append(rb.reminders, r)
-	rb.reMutex.Unlock()
-
 	msg := fmt.Sprintf("reminding you(%s) in %s, %s", m.User.Nick, duration.String(), another.Format("02 Jan 06 15:04:05 MST"))
 
 	// send it to the user in a pm
@@ -115,12 +110,10 @@ func (rdgg *ReminderDgg) remind(r *Reminder) {
 }
 
 func (rb *ReminderBot) countDggRemindersForUser(nick string) int {
-	rb.reMutex.Lock()
-	defer rb.reMutex.Unlock()
-
+	reminders := rb.GetAllReminders()
 	s := 0
 
-	for _, r := range rb.reminders {
+	for _, r := range reminders {
 		if r.Platform != "destinygg" {
 			continue
 		}

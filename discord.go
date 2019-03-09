@@ -187,7 +187,7 @@ func discordStats(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Messa
 				},
 				{
 					Name:   "reminders",
-					Value:  fmt.Sprintf("%d", len(rb.reminders)),
+					Value:  fmt.Sprintf("%d", len(rb.GetAllReminders())),
 					Inline: true,
 				},
 			},
@@ -290,11 +290,6 @@ func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Mess
 		// adding it to the database reminders
 		rb.AddReminder(r)
 
-		// adding it to the in memory reminders
-		rb.reMutex.Lock()
-		rb.reminders = append(rb.reminders, r)
-		rb.reMutex.Unlock()
-
 		msg := fmt.Sprintf("reminding you(%s) in %s, %s", m.Author.Mention(), duration.String(), another.Format("02 Jan 06 15:04:05 MST"))
 
 		// send it to the public #channel
@@ -335,10 +330,9 @@ func (rd *ReminderDiscord) remind(r *Reminder) {
 
 func (rb *ReminderBot) countPublicRemindersUser(userID string) int {
 	c := 0
-	rb.reMutex.Lock()
-	defer rb.reMutex.Unlock()
+	reminders := rb.GetAllReminders()
 
-	for _, r := range rb.reminders {
+	for _, r := range reminders {
 		if !r.DirectMessage && r.UserID == userID {
 			c++
 		}
@@ -348,10 +342,9 @@ func (rb *ReminderBot) countPublicRemindersUser(userID string) int {
 
 func (rb *ReminderBot) countPrivateRemindersUser(userID string) int {
 	c := 0
-	rb.reMutex.Lock()
-	defer rb.reMutex.Unlock()
+	reminders := rb.GetAllReminders()
 
-	for _, r := range rb.reminders {
+	for _, r := range reminders {
 		if r.DirectMessage && r.UserID == userID {
 			c++
 		}
