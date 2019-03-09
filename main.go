@@ -21,7 +21,7 @@ type ReminderBot struct {
 
 func init() {
 	log.SetFormatter(&log.TextFormatter{
-		FullTimestamp:   true,
+		ForceColors:     true,
 		TimestampFormat: "2006-01-02 15:04:05",
 	})
 }
