@@ -300,32 +300,34 @@ func discordRemind(rb *ReminderBot) func(s *discordgo.Session, m *discordgo.Mess
 }
 
 func (rd *ReminderDiscord) remind(r *Reminder) {
-	embed := &discordgo.MessageEmbed{
-		Fields: []*discordgo.MessageEmbedField{
-			{
-				Name:   "set",
-				Value:  r.CreatedAt.UTC().Format("02 Jan 06 15:04:05 MST"),
-				Inline: true,
+	m := &discordgo.MessageSend{
+		Content: r.Mentions,
+		Embed: &discordgo.MessageEmbed{
+			Fields: []*discordgo.MessageEmbedField{
+				{
+					Name:   "set",
+					Value:  r.CreatedAt.UTC().Format("02 Jan 06 15:04:05 MST"),
+					Inline: true,
+				},
+				{
+					Name:   "user",
+					Value:  fmt.Sprintf("<@%s>", r.UserID),
+					Inline: true,
+				},
 			},
-			{
-				Name:   "user",
-				Value:  fmt.Sprintf("<@%s>", r.UserID),
-				Inline: true,
-			},
+			Description: r.Message,
 		},
-		Description: r.Message,
 	}
+	chID := r.ChannelID
 	if r.DirectMessage {
 		dm, err := rd.c.UserChannelCreate(r.UserID)
 		if err != nil {
 			log.Warnf("couldn't create dm channel, %v", err)
 			return
 		}
-		rd.c.ChannelMessageSendEmbed(dm.ID, embed)
-		return
+		chID = dm.ID
 	}
-	rd.c.ChannelMessageSendEmbed(r.ChannelID, embed)
-	rd.c.ChannelMessageSend(r.ChannelID, r.Mentions)
+	rd.c.ChannelMessageSendComplex(chID, m)
 }
 
 func (rb *ReminderBot) countPublicRemindersUser(userID string) int {
