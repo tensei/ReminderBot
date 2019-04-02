@@ -34,7 +34,7 @@ func main() {
 
 	rb.NewDatabase()
 	rb.NewDiscord()
-	go rb.NewDestinygg()
+	rb.NewDestinygg()
 
 	log.Infof("Loaded %d reminder(s)", len(rb.GetAllReminders()))
 	go rb.startReminding()

@@ -41,17 +41,10 @@ type Reminder struct {
 
 // NewDatabase create/opens a database
 func (rb *ReminderBot) NewDatabase() {
-	db := rb.Config.Database.ConnectionString
-	dialect := rb.Config.Database.Dialect
-
-	if db == "" || dialect == "" {
-		log.Fatal("[DATABASE] missing connectionString/dialect in config file")
-	}
-
 	var err error
-	rb.db, err = gorm.Open(dialect, db)
+	rb.db, err = gorm.Open("sqlite3", "/data/live.db")
 	if err != nil {
-		log.Fatalf("[DATABASE] failed opening %s: %v", db, err)
+		log.Fatalf("[DATABASE] failed opening db: %v", err)
 	}
 
 	rb.db.AutoMigrate(&Guild{})
