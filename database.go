@@ -42,7 +42,7 @@ type Reminder struct {
 // NewDatabase create/opens a database
 func (rb *ReminderBot) NewDatabase() {
 	var err error
-	rb.db, err = gorm.Open("sqlite3", "/data/live.db")
+	rb.db, err = gorm.Open("sqlite3", "/data/reminder.db")
 	if err != nil {
 		log.Fatalf("[DATABASE] failed opening db: %v", err)
 	}
