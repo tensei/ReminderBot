@@ -1,21 +1,19 @@
 module github.com/tensei/ReminderBot
 
 require (
-	cloud.google.com/go v0.33.1 // indirect
+	cloud.google.com/go v0.39.0 // indirect
 	github.com/bwmarrin/discordgo v0.19.0
-	github.com/denisenkom/go-mssqldb v0.0.0-20181014144952-4e0d7dc8888f // indirect
-	github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5 // indirect
+	github.com/denisenkom/go-mssqldb v0.0.0-20190515213511-eb9f6a1743f3 // indirect
 	github.com/etdub/goparsetime v0.0.0-20160315173935-ea17b0ac3318 // indirect
-	github.com/go-sql-driver/mysql v1.4.1 // indirect
-	github.com/gofrs/uuid v3.1.0+incompatible // indirect
-	github.com/google/go-cmp v0.2.0 // indirect
-	github.com/jinzhu/gorm v1.9.2
-	github.com/jinzhu/inflection v0.0.0-20180308033659-04140366298a // indirect
-	github.com/jinzhu/now v0.0.0-20181116074157-8ec929ed50c3 // indirect
+	github.com/google/go-cmp v0.3.0 // indirect
+	github.com/jinzhu/gorm v1.9.8
 	github.com/karrick/tparse v2.4.2+incompatible
-	github.com/lib/pq v1.0.0 // indirect
-	github.com/mattn/go-sqlite3 v1.10.0 // indirect
-	github.com/sirupsen/logrus v1.2.0
+	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
+	github.com/lib/pq v1.1.1 // indirect
+	github.com/sirupsen/logrus v1.4.2
+	github.com/stretchr/testify v1.3.0 // indirect
 	github.com/voloshink/dggchat v0.0.0-20171209033102-97642b4d160e
-	google.golang.org/appengine v1.3.0 // indirect
+	golang.org/x/crypto v0.0.0-20190513172903-22d7a77e9e5f // indirect
+	golang.org/x/sys v0.0.0-20190524152521-dbbf3f1254d4 // indirect
+	google.golang.org/appengine v1.6.0 // indirect
 )
