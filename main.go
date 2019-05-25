@@ -69,17 +69,20 @@ func (rb *ReminderBot) startReminding() {
 	tick := time.NewTicker(time.Minute)
 	for range tick.C {
 		reminders := rb.GetAllReminders()
-		for _, r := range reminders {
+		for i, r := range reminders {
 			if r == nil {
 				continue
 			}
 			if time.Now().UTC().After(r.Time) {
-
 				switch r.Platform {
 				case "discord", "":
 					// create a dm channel if dm and remind him/her/it
 					rb.Discord.remind(r)
 				case "destinygg":
+					// if last reminder is from dgg, wait 500ms to not get throttled
+					if i > 0 && reminders[i-1].Platform == "destinygg" {
+						time.Sleep(time.Millisecond * 500)
+					}
 					// send reminder as pm to dgg user
 					rb.Dgg.remind(r)
 				}
