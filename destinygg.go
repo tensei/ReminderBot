@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/karrick/tparse"
+	"github.com/karrick/tparse/v2"
 	log "github.com/sirupsen/logrus"
 	"github.com/voloshink/dggchat"
 )
