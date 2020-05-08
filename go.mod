@@ -5,13 +5,10 @@ go 1.14
 require (
 	github.com/bwmarrin/discordgo v0.20.3
 	github.com/denisenkom/go-mssqldb v0.0.0-20200428022330-06a60b6afbbc // indirect
-	github.com/etdub/goparsetime v0.0.0-20160315173935-ea17b0ac3318 // indirect
-	github.com/go-sql-driver/mysql v1.5.0 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/jinzhu/gorm v1.9.12
-	github.com/karrick/tparse v2.4.2+incompatible // indirect
 	github.com/karrick/tparse/v2 v2.8.1
-	github.com/kr/pretty v0.1.0 // indirect
+	github.com/kr/pretty v0.2.0 // indirect
 	github.com/lib/pq v1.5.2 // indirect
 	github.com/mattn/go-sqlite3 v2.0.3+incompatible // indirect
 	github.com/sirupsen/logrus v1.6.0
