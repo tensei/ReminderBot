@@ -10,4 +10,4 @@ WORKDIR /app
 RUN apk add --no-cache tzdata
 COPY --from=build-env /src/reminderbot /app/
 COPY --from=build-env /src/config.json /app/
-CMD ["reminderbot"]
+ENTRYPOINT ./reminderbot
