@@ -1,8 +1,8 @@
 version: "3"
 services:
-  base:
+  bot:
     build: .
-    network_mode: "host"
+    container_name: reminder-bot
     restart: unless-stopped
     volumes:
-      - /var/personal-stuff/reminderbot:/data
+      - ~/reminderbot-data:/data

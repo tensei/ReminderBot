@@ -2,3 +2,4 @@
 config.json
 ReminderBot
 /.idea
+*.exe
